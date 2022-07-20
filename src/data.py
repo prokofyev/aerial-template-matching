@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional, Tuple, Union
 
 import os
 import sys
@@ -16,13 +16,40 @@ from tqdm import tqdm
 
 from .utils import rotate_image, offset_coordinates
 
+if __name__ == '__main__':
+    pass
+
 
 class ImageDataset(Dataset):
-    def __init__(self, data_df, background_image_paths=None, add_data=True, transform=None):
+    """
+    Class to create pytorch dataset for the aerial template matching task
+    """
+
+    def __init__(self,
+                 data_df: pd.DataFrame,
+                 background_image_paths: List[str] = None,
+                 add_data: bool = True,
+                 transform: Optional[A.core.composition.Compose] = None) -> None:
+        """
+        Create the pytorch dataset for the aerial template matching task
+
+        Parameters
+        ----------
+        data_df (pd.DataFrame): pre-cropped images and labels
+        background_image_paths (List[str]): paths of backgrounds to create new data from
+        add_data (bool): whether to augment with data generated from provided backgrounds
+        transform (albumentations.Compose): albumentations transforms
+        """
         self.data_df = data_df
+        self.transform = transform
         self._add_data = add_data
         self._data_len = len(self.data_df)
-        self.transform = transform
+        self._points = np.array([[0, 1024],
+                                 [0, 0],
+                                 [1024, 0],
+                                 [1024, 1024]], dtype="float32")
+        self._coords_grid = [i * 422 + 1024 for i in range(21)]
+        self._coords_grid = list(product(self._coords_grid, self._coords_grid))
 
         if background_image_paths:
             self.background_image_paths = background_image_paths
@@ -30,21 +57,29 @@ class ImageDataset(Dataset):
             self._background_images_len = len(self.background_image_paths)
             self._cycle = cycle(range(self._background_images_len))
 
-        self._points = np.array([[0, 1024],
-                                 [0, 0],
-                                 [1024, 0],
-                                 [1024, 1024]], dtype="float32")
-
-        self._coords_grid = [i * 422 + 1024 for i in range(21)]
-        self._coords_grid = list(product(self._coords_grid, self._coords_grid))
-
-    def __len__(self):
+    def __len__(self) -> int:
+        """
+        Returns
+        ----------
+        length (int): dataset length
+        """
         if self._add_data:
             return self._data_len * 2
         else:
             return self._data_len
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx: int) -> Tuple[Union[torch.Tensor, np.ndarray], Union[torch.Tensor, np.ndarray]]:
+        """
+        Gets images and labels by id, generates new images and labels on-the-fly if needed
+
+        Parameters
+        ----------
+        idx (int): image id
+
+        Returns
+        ----------
+        result (Tuple): image and its labels
+        """
         if idx < self._data_len:
             template_image_path = self.data_df.iloc[idx]['path']
             template_image = cv2.imread(template_image_path)
@@ -59,14 +94,14 @@ class ImageDataset(Dataset):
             left_top_y = self._coords_grid[idx][1] + np.random.randint(low=-100, high=100, dtype=int)
 
             offset = (left_top_x, left_top_y)
-            angle = np.random.choice(
-                [np.random.randint(low=0, high=45, dtype=int), np.random.randint(low=315, high=360, dtype=int)])
+            angle = np.random.choice([np.random.randint(low=0, high=45, dtype=int),
+                                      np.random.randint(low=315, high=360, dtype=int)])
             theta = np.radians(angle)
-            rotated_mask = np.array(
-                [offset_coordinates(rotate_image(coordinates, theta), offset) for coordinates in self._points],
-                dtype='float32')
+            rotated_mask = np.array([offset_coordinates(rotate_image(coordinates, theta), offset)
+                                     for coordinates in self._points], dtype='float32')
             transformation_matrix = cv2.getPerspectiveTransform(rotated_mask, self._points)
-            template_image = cv2.warpPerspective(self.background_images[next(self._cycle)], transformation_matrix,
+            template_image = cv2.warpPerspective(self.background_images[next(self._cycle)],
+                                                 transformation_matrix,
                                                  (1024, 1024))
 
             right_bottom_x = int(rotated_mask[3][0])
@@ -88,7 +123,18 @@ class ImageDataset(Dataset):
         return template_image, torch.tensor(template_labels).float()
 
 
-def create_and_save_backgrounds(ids: List[List], data_df: pd.DataFrame, save_path: str):
+def create_and_save_backgrounds(ids: List[List],
+                                data_df: pd.DataFrame,
+                                save_path: str) -> None:
+    """
+    Generates new backgrounds from training set and saves them
+
+    Parameters
+    ----------
+    ids (List): list of lists of image ids for each new background
+    data_df (pd.DataFrame): pre-cropped images and labels
+    save_path (str): where to save the files
+    """
     with tqdm(total=sum([len(x) for x in ids]), leave=True, file=sys.stdout) as t:
         for i, fold in enumerate(ids):
             background = Image.open('/content/original.tiff')
@@ -115,6 +161,19 @@ def create_and_save_backgrounds(ids: List[List], data_df: pd.DataFrame, save_pat
 
 
 def read_json_from_dir(json_dir: str, image_dir: str) -> pd.DataFrame:
+    """
+    Creates pre-cropped images and labels dataframe from json files
+
+    Parameters
+    ----------
+    json_dir (str): folder with json files
+    image_dir (str): folder with image files
+    save_path (str): where to save the files
+
+    Returns
+    ----------
+    data_df (pd.DataFrame): images and labels dataframe
+    """
     data_df = pd.DataFrame({'path': [],
                             'left_top_x': [],
                             'left_top_y': [],
@@ -155,7 +214,7 @@ def get_transforms(image_width: int = 512,
     ----------
     image_width (int): desired image width
     image_height (int): desired image height
-    add_augmentations (bool): if true, returns transforms with augmentation
+    add_augmentations (bool): if true, returns transforms with augmentations
 
     Returns
     -------

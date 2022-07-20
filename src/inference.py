@@ -3,11 +3,30 @@ import torch
 import numpy as np
 import pandas as pd
 import cv2
+import albumentations as A
 
 from .utils import offset_coordinates, rotate_image
 
+if __name__ == '__main__':
+    pass
 
-def predict_and_save(model: torch.nn.Module, transform, data_df: pd.DataFrame, path: str, device: torch.device):
+
+def predict_and_save(model: torch.nn.Module,
+                     transform: A.core.composition.Compose,
+                     data_df: pd.DataFrame,
+                     path: str,
+                     device: torch.device) -> None:
+    """
+    Predicts labels and saves json files to provided path
+
+    Parameters
+    ----------
+    model (torch.nn.Module): initialised pytorch model
+    transform (albumentations.Compose): albumentations transforms to apply before prediction
+    data_df (pd.DataFrame): dataframe containing filenames and paths for prediction
+    path (str): path to save predictions
+    device (torch.device): pytorch device
+    """
     model.eval()
     for index, row in data_df.iterrows():
         with torch.inference_mode():
@@ -30,11 +49,11 @@ def predict_and_save(model: torch.nn.Module, transform, data_df: pd.DataFrame, p
         left_bot_x_pred, left_bot_y_pred = offset_coordinates(rotate_image([0, 1024], theta), offset)
         right_top_x_pred, right_top_y_pred = offset_coordinates(rotate_image([1024, 0], theta), offset)
 
-        left_top_x_pred, left_top_y_pred = np.round(left_top_x_pred.item(), 4), np.round(left_top_y_pred.item(), 4)
-        right_top_x_pred, right_top_y_pred = np.round(right_top_x_pred.item(), 4), np.round(right_top_y_pred.item(), 4)
-        left_bot_x_pred, left_bot_y_pred = np.round(left_bot_x_pred.item(), 4), np.round(left_bot_y_pred.item(), 4)
-        right_bot_x_pred, right_bot_y_pred = np.round(right_bot_x_pred.item(), 4), np.round(right_bot_y_pred.item(), 4)
-        angle_pred = np.round(angle_pred.item(), 4)
+        left_top_x_pred, left_top_y_pred = np.round(left_top_x_pred, 4), np.round(left_top_y_pred, 4)
+        right_top_x_pred, right_top_y_pred = np.round(right_top_x_pred, 4), np.round(right_top_y_pred, 4)
+        left_bot_x_pred, left_bot_y_pred = np.round(left_bot_x_pred, 4), np.round(left_bot_y_pred, 4)
+        right_bot_x_pred, right_bot_y_pred = np.round(right_bot_x_pred, 4), np.round(right_bot_y_pred, 4)
+        angle_pred = np.round(angle_pred, 4)
 
         prediction_json = {
             'left_top': [left_top_x_pred, left_top_y_pred],

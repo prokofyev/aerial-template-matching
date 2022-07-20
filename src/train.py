@@ -1,4 +1,4 @@
-from typing import Optional, List, Any
+from typing import Optional, List
 import sys
 import gc
 from collections import namedtuple
@@ -7,12 +7,27 @@ from tqdm import tqdm
 
 from .utils import RunningAverage, compute_metric
 
+if __name__ == '__main__':
+    pass
+
 EpochStats = namedtuple('EpochStats', 'epoch learning_rate train_loss val_loss val_metric time')
 
 MSE = torch.nn.MSELoss(reduction='sum')
 
 
-def criterion(y_pred, y_true):
+def criterion(y_pred: torch.Tensor, y_true: torch.Tensor) -> torch.Tensor:
+    """
+    Custom criterion for competition
+
+    Parameters
+    ----------
+    y_pred (torch.Tensor): predicted labels
+    y_true (torch.Tensor): true labels
+
+    Returns
+    ----------
+    criterion (torch.Tensor): calculated criterion
+    """
     batch_size = y_pred.shape[0]
     alpha = 16
     loss = 0.7 * MSE(y_pred[:, :4], y_true[:, :4]) + 0.3 * torch.min(MSE(y_pred[:, 4], y_true[:, 4]),
@@ -30,7 +45,7 @@ def train(model: torch.nn.Module,
           lr_scheduler: Optional[torch.optim.lr_scheduler._LRScheduler],
           filename: str,
           accumulate_every_n_epochs: int = 1,
-          clip_gradient: bool = False) -> List[Any]:
+          clip_gradient: bool = False) -> List[EpochStats]:
     """
     Train the model and evaluate every epoch
 
