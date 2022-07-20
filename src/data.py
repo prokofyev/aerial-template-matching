@@ -1,4 +1,4 @@
-from typing import List, Optional, Tuple, Union
+from typing import List, Optional, Tuple, Union, Any
 
 import os
 import sys
@@ -123,8 +123,9 @@ class ImageDataset(Dataset):
         return template_image, torch.tensor(template_labels).float()
 
 
-def create_and_save_backgrounds(ids: List[List],
+def create_and_save_backgrounds(ids: List[List[int]],
                                 data_df: pd.DataFrame,
+                                background_path: str,
                                 save_path: str) -> None:
     """
     Generates new backgrounds from training set and saves them
@@ -133,11 +134,12 @@ def create_and_save_backgrounds(ids: List[List],
     ----------
     ids (List): list of lists of image ids for each new background
     data_df (pd.DataFrame): pre-cropped images and labels
+    background_path (str): background to paste images on
     save_path (str): where to save the files
     """
     with tqdm(total=sum([len(x) for x in ids]), leave=True, file=sys.stdout) as t:
         for i, fold in enumerate(ids):
-            background = Image.open('/content/original.tiff')
+            background = Image.open(background_path)
             for idx in fold:
                 template_image = cv2.imread(data_df.iloc[idx]['path'])
                 template_image = cv2.cvtColor(template_image, cv2.COLOR_BGR2RGBA)

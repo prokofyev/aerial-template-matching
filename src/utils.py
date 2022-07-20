@@ -7,7 +7,7 @@ if __name__ == '__main__':
     pass
 
 
-def rotate_image(coordinates: Union[List[float, float], Tuple[float, float]], theta: float) -> Tuple[float, float]:
+def rotate_image(coordinates: Union[List[float], Tuple[float, float]], theta: float) -> Tuple[float, float]:
     """
     Calculates the new coordinates after rotating image by theta radians
 
