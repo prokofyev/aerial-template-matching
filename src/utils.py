@@ -2,12 +2,14 @@ from typing import Tuple, List, Union
 
 import numpy as np
 import os
+import torch
 
 if __name__ == '__main__':
     pass
 
 
-def rotate_image(coordinates: Union[List[float], Tuple[float, float]], theta: float) -> Tuple[float, float]:
+def rotate_image(coordinates: Union[List[float], Tuple[float, float]], theta: float) \
+        -> Union[Tuple[float, float], Tuple[torch.Tensor, torch.Tensor]]:
     """
     Calculates the new coordinates after rotating image by theta radians
 
@@ -27,7 +29,7 @@ def rotate_image(coordinates: Union[List[float], Tuple[float, float]], theta: fl
 
 
 def offset_coordinates(coordinates: Tuple[float, float],
-                       offset: Tuple[float, float]) -> Tuple[float, float]:
+                       offset: Tuple[float, float]) -> Union[Tuple[float, float], Tuple[torch.Tensor, torch.Tensor]]:
     """
     Offsets the coordinates
 

@@ -49,11 +49,11 @@ def predict_and_save(model: torch.nn.Module,
         left_bot_x_pred, left_bot_y_pred = offset_coordinates(rotate_image([0, 1024], theta), offset)
         right_top_x_pred, right_top_y_pred = offset_coordinates(rotate_image([1024, 0], theta), offset)
 
-        left_top_x_pred, left_top_y_pred = np.round(left_top_x_pred, 4), np.round(left_top_y_pred, 4)
-        right_top_x_pred, right_top_y_pred = np.round(right_top_x_pred, 4), np.round(right_top_y_pred, 4)
-        left_bot_x_pred, left_bot_y_pred = np.round(left_bot_x_pred, 4), np.round(left_bot_y_pred, 4)
-        right_bot_x_pred, right_bot_y_pred = np.round(right_bot_x_pred, 4), np.round(right_bot_y_pred, 4)
-        angle_pred = np.round(angle_pred, 4)
+        left_top_x_pred, left_top_y_pred = np.round(left_top_x_pred.item(), 4), np.round(left_top_y_pred.item(), 4)
+        right_top_x_pred, right_top_y_pred = np.round(right_top_x_pred.item(), 4), np.round(right_top_y_pred.item(), 4)
+        left_bot_x_pred, left_bot_y_pred = np.round(left_bot_x_pred.item(), 4), np.round(left_bot_y_pred.item(), 4)
+        right_bot_x_pred, right_bot_y_pred = np.round(right_bot_x_pred.item(), 4), np.round(right_bot_y_pred.item(), 4)
+        angle_pred = np.round(angle_pred.item(), 4)
 
         prediction_json = {
             'left_top': [left_top_x_pred, left_top_y_pred],

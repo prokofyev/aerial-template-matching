@@ -10,6 +10,7 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset
 import albumentations as A
+import albumentations.pytorch
 import cv2
 from PIL import Image
 from tqdm import tqdm
